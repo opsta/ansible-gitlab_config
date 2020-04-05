@@ -1,0 +1,15 @@
+---
+galaxy_info:
+  author: jirayut
+  description: Ansible role to configure GitLab
+  company: "Opsta (Thailand) Co., Tld."
+  license: "MIT"
+  min_ansible_version: 2.5
+  platforms:
+  - name: Ubuntu
+    versions:
+    - trusty
+    - xenial
+  galaxy_tags:
+    - gitlab
+dependencies: []

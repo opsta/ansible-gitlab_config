@@ -1,0 +1,66 @@
+---
+- name: "Create GitLab Group"
+  gitlab_group:
+    api_url: "{{ gc_api_url }}"
+    api_token: "{{ gc_api_token }}"
+    name: "{{ item.value.name }}"
+    path: "{{ item.key }}"
+    visibility: "{{ item.value.visibility | default('private') }}"
+    state: present
+  with_dict: "{{ gc_groups }}"
+
+- name: "Create GitLab User"
+  gitlab_user:
+    api_url: "{{ gc_api_url }}"
+    api_token: "{{ gc_api_token }}"
+    name: "{{ item.value.name }}"
+    username: "{{ item.key }}"
+    password: "{{ item.value.password | default(omit) }}"
+    email: "{{ item.value.email }}"
+    confirm: "{{ 'no' if item.value.password is defined else 'yes' }}"
+    sshkey_name: "{{ item.value.sshkey_name | default(omit) }}"
+    sshkey_file: "{{ item.value.sshkey_file | default(omit) }}"
+    group: "{{ item.value.group | default(omit) }}"
+    access_level: "{{ item.value.access_level | default(omit) }}"
+    state: present
+  with_dict: "{{ gc_users }}"
+
+- name: Create GitLab Project
+  gitlab_project:
+    api_url: "{{ gc_api_url }}"
+    api_token: "{{ gc_api_token }}"
+    name: "{{ item.value.name }}"
+    path: "{{ item.key }}"
+    group: "{{ item.value.group }}"
+    issues_enabled: "{{ item.value.issues_enabled | default('yes') }}"
+    merge_requests_enabled: "{{ item.value.merge_requests_enabled | default('yes') }}"
+    wiki_enabled: "{{ item.value.wiki_enabled | default('yes') }}"
+    snippets_enabled: "{{ item.value.snippets_enabled | default('yes') }}"
+    visibility: "{{ item.value.visibility | default('private') }}"
+    state: present
+  with_dict: "{{ gc_projects }}"
+
+- name: "Create deploy key to add push access"
+  gitlab_deploy_key:
+    api_url: "{{ gc_api_url }}"
+    api_token: "{{ gc_api_token }}"
+    project: "{{ item.value.group }}/{{ item.key }}"
+    title: "{{ item.value.deploy_key_title }}"
+    can_push: "{{ item.value.can_push | default('no') }}"
+    key: "{{ item.value.deploy_key }}"
+    state: present
+  when: item.value.deploy_key is defined
+  with_dict: "{{ gc_projects }}"
+
+- name: "Adding a project hook"
+  gitlab_hook:
+    api_url: "{{ gc_api_url }}"
+    api_token: "{{ gc_api_token }}"
+    project: "{{ item.value.group }}/{{ item.key }}"
+    hook_url: "{{ item.value.hook }}"
+    hook_validate_certs: "{{ item.value.hook_validate_certs | default('yes') }}"
+    push_events: yes
+    tag_push_events: no
+    state: present
+  when: item.value.hook is defined
+  with_dict: "{{ gc_projects }}"
